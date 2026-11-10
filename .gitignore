@@ -1,0 +1,5 @@
+minihttpd
+prueba_paso1
+*.o
+src/*.o
+.vscode/
