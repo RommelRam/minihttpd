@@ -1,12 +1,10 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-int errexit(const char *format, ...);
+
 
 int passivesock(const char *service, const char *transport, int qlen);
+void run_server_loop(int server_fd, const char *www_root);
 
-int passiveTCP(const char *service, int qlen);
 
-int set_nonblocking(int fd);
-
-#endif  
+#endif

@@ -3,4 +3,4 @@
 
 void handle_http_request(int client_fd, const char *raw_request, const char *www_root);
 
-#endif
+#endif // HTTP_H

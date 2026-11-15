@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "server.h"
-#include "epoll_loop.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -20,9 +19,15 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) == NULL) 
+    return EXIT_FAILURE;
+    
+    char www_root[2048];
+    snprintf(www_root, sizeof(www_root), "%s/www", cwd);    
     printf("Servidor MiniHTTPd escuchando en el puerto %s...\n", port);
 
-    run_epoll_loop(server_fd, "./www");
+    run_server_loop(server_fd, www_root);
 
     close(server_fd);
     return EXIT_SUCCESS;
