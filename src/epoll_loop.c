@@ -2,6 +2,7 @@
 #include "epoll_loop.h"
 #include "server.h"
 #include <stdio.h>
+#include "http.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -47,28 +48,15 @@ static void handle_client_data(int epoll_fd, int client_fd, const char *www_root
 
     if (bytes_read > 0) {
         buffer[bytes_read] = '\0';
-        printf("Peticion recibida en fd %d:\n%s\n", client_fd, buffer);
-
-        const char *temp_response =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain; charset=UTF-8\r\n"
-            "Content-Length: 27\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "epoll activo en MiniHTTPd\n";
-
-        ssize_t sent = write(client_fd, temp_response, strlen(temp_response));
-        if (sent == -1) {
-            perror("write");
-        }
+        handle_http_request(client_fd, buffer, www_root);
 
         epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
         close(client_fd);
+
     } else if (bytes_read == 0 || (bytes_read == -1 && errno != EAGAIN && errno != EWOULDBLOCK)) {
         epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
         close(client_fd);
     }
-    (void)www_root;
 }
 
 void run_epoll_loop(int server_fd, const char *www_root) {
