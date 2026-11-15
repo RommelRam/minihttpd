@@ -1,38 +1,29 @@
-#include "server.h"
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include "server.h"
+#include "epoll_loop.h"
 
-#define PUERTO_PRUEBA "8080"
-#define COLA_ESPERA   10
-
-int main(void) {
-    int msock, ssock;
-    struct sockaddr_storage client_addr;
-    socklen_t addrlen;
-    char buffer[1024];
-
-    msock = passiveTCP(PUERTO_PRUEBA, COLA_ESPERA);
-    printf("Servidor de prueba del Paso 1 escuchando en el puerto %s...\n", PUERTO_PRUEBA);
-
-    addrlen = sizeof(client_addr);
-    ssock = accept(msock, (struct sockaddr *)&client_addr, &addrlen);
-    if (ssock < 0) {
-        errexit("Fallo en accept\n");
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Uso: %s <puerto>\n", argv[0]);
+        return EXIT_FAILURE;
     }
 
-    ssize_t n = read(ssock, buffer, sizeof(buffer) - 1);
-    if (n > 0) {
-        buffer[n] = '\0';
-        printf("--- Solicitud recibida del cliente ---\n%s\n---------------------------------------\n", buffer);
+    const char *port = argv[1];
+    int qlen = 128;
+
+    int server_fd = passivesock(port, "tcp", qlen);
+    if (server_fd < 0) {
+        fprintf(stderr, "Error al iniciar el socket en el puerto %s\n", port);
+        return EXIT_FAILURE;
     }
 
-    const char *resp = "HTTP/1.1 200 OK\r\nContent-Length: 18\r\nContent-Type: text/plain\r\n\r\nPaso 1 completado\n";
-    write(ssock, resp, 83);
+    printf("Servidor MiniHTTPd escuchando en el puerto %s...\n", port);
 
-    close(ssock);
-    close(msock);
-    return 0;
+    run_epoll_loop(server_fd, "./www");
+
+    close(server_fd);
+    return EXIT_SUCCESS;
 }
