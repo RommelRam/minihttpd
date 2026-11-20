@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/stat.h>
  
 #define MAX_EVENTS 1024
 #define BUFFER_SIZE 4096
@@ -42,6 +43,29 @@ int passivesock(const char *service, const char *transport, int qlen) {
     
     if (rp == NULL || (hints.ai_socktype == SOCK_STREAM && listen(s, qlen) == -1)) return -1;
     return s;
+}
+
+
+void daemonize_process(void) {
+    pid_t pid = fork();
+    if (pid < 0) exit(EXIT_FAILURE);
+    if (pid > 0) exit(EXIT_SUCCESS);
+
+    if (setsid() < 0) exit(EXIT_FAILURE);
+
+    pid = fork();
+    if (pid < 0) exit(EXIT_FAILURE);
+    if (pid > 0) exit(EXIT_SUCCESS);
+
+    umask(0);
+
+    int devnull = open("/dev/null", O_RDWR);
+    if (devnull >= 0) {
+        dup2(devnull, STDIN_FILENO);
+        dup2(devnull, STDOUT_FILENO);
+        dup2(devnull, STDERR_FILENO);
+        if (devnull > 2) close(devnull);
+    }
 }
 
 static int set_nonblocking(int fd) {
